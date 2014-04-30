@@ -24,12 +24,33 @@ by-day  [project_name] [date_from] [date_to] - list all timelog between dates an
 ```
 
 We can start out workday like this:
+```bash
+$ timetracking workday start
+$ timetracking start my_project "start developing some stuff by task #232"
+$ timetracking stop my_project
+$ timetracking today
+$ timetracking workday stop
 ```
-tt workday start
-tt start my_project "start developing some stuff by task #232"
-tt stop my_project
-tt today
-tt workday stop
+
+## How to install ?
+First you need to install PostgreSQL on your system. Next create database fro example timetracking. Init this database with init.sql from sql/init.sql. Next create configuration file ~/.timetracking.json
+
+Example of ~/.timetracking.json
+```json
+{
+	"userName": "postgres",
+	"password": "secret",
+	"hostName": "localhost",
+	"databaseName": "timetracking"
+}
+
 ```
+
+Next install timetracking:
+```bash
+go get github.com/webus/timetracking
+```
+
+Enjoy!
 
 
