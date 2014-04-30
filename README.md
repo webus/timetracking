@@ -21,4 +21,13 @@ summary [project_name] [date_from] [date_to] - list all timelog between dates wi
 by-day  [project_name] [date_from] [date_to] - list all timelog between dates and summary
 ```
 
+We can start out workday like this:
+```
+tt workday start
+tt start my_project "start developing some stuff by task #232"
+tt stop my_project
+tt today
+tt workday stop
+```
+
 
