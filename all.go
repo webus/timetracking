@@ -6,63 +6,6 @@ import "time"
 import "strconv"
 import "database/sql"
 
-// start and stop work on project
-func project_action(action_name string, project_name string, action_comment string) {
-        db, err := sql.Open("postgres",connection_string())
-        if err != nil {
-                log.Fatal(err)
-        } else {
-                build_sql := fmt.Sprintf("SELECT %s_project($1,$2)", action_name)
-                rows, err := db.Query(build_sql, project_name, action_comment)
-                if err != nil {
-                        log.Fatal(err)
-                } else {
-                        for rows.Next() {
-                                var start_result int
-                                if err := rows.Scan(&start_result); err != nil {
-                                        log.Fatal(err)
-                                }
-                                if start_result == 0 {
-                                        fmt.Printf("project [%s] action %s. ok.\n", project_name, action_name)
-                                } else {
-                                        fmt.Printf("!!! project [%s] can't %s, because it %s already !!!\n", project_name, action_name, action_name)
-                                }
-                        }
-                }
-        }
-}
-
-// get list of available projects
-func available_projects_list() []string {
-        db,err := sql.Open("postgres",connection_string())
-        var projects_list []string
-        if err != nil {
-                log.Fatal(err)
-        } else {
-                rows, err := db.Query("select project_name from projects")
-                if err != nil {
-                        log.Fatal(err)
-                }
-                for rows.Next() {
-                        var name string
-                        if err := rows.Scan(&name); err != nil {
-                                log.Fatal(err)
-                        }
-                        projects_list = append(projects_list, name)
-                }
-                db.Close()
-        }
-        return projects_list
-}
-
-// print list of available projects
-func available_projects() {
-        projects_list := available_projects_list()
-        for index, element := range projects_list {
-                fmt.Printf("%v. - %s\n",index + 1,element)
-        }
-}
-
 // helper function to get rate for project and for special time
 func get_rate(project_name string, to_time time.Time) (float64, string) {
         db,err := sql.Open("postgres",connection_string())
@@ -88,16 +31,6 @@ func get_rate(project_name string, to_time time.Time) (float64, string) {
                 db.Close()
         }
         return 0, ""
-}
-
-func get_active_porjects() {
-        projects_list := available_projects_list()
-        for index, element := range projects_list {
-                state_name, _, _, _, _ := get_state_of_project(element)
-                if state_name == "start" {
-                        fmt.Printf("%v. - %s\n",index + 1,element)
-                }
-        }
 }
 
 func get_state_of_project(project_name string) (
@@ -136,48 +69,6 @@ func get_state_of_project(project_name string) (
                 db.Close()
         }
         return
-}
-
-// print current state of project
-func get_state(project_name string) {
-        db,err := sql.Open("postgres",connection_string())
-        if err != nil {
-                log.Fatal(err)
-        } else {
-                query := "select wl.action_time, st.state_name, wl.action_comment from worklog wl " +
-                         "inner join projects prj on prj.uid = wl.project_id " +
-                         "inner join states st on st.uid = wl.state_id " +
-                         "where prj.project_name = $1 " +
-                         "order by wl.action_time desc limit 1"
-                rows, err := db.Query(query, project_name)
-                if err != nil {
-                        log.Fatal(err)
-                }
-                for rows.Next() {
-                        var action_time time.Time
-                        var state_name string
-                        var action_comment string
-                        if err := rows.Scan(&action_time, &state_name, &action_comment); err != nil {
-                                log.Fatal(err)
-                        }
-                        fmt.Println(" === ")
-                        fmt.Printf("Project           : %s\n", project_name)
-                        fmt.Printf("Last action       : %s \n", state_name)
-                        fmt.Printf("Action started at : %v \n",action_time)
-                        fmt.Printf("Now               : %v \n",time.Now())
-                        delta := time.Since(action_time)
-                        hours := delta.Hours()
-                        hours_s := fmt.Sprintf("%.2f", hours)
-                        hours_f, _ := strconv.ParseFloat(hours_s, 2)
-                        fmt.Printf("Hours left        : %s (h)\n", hours_s)
-                        rate, currency_name := get_rate(project_name, time.Now())
-                        fmt.Printf("Rate              : %s (%s) (per hour) \n", round2string(rate), currency_name)
-                        fmt.Printf("Money             : %s (%s)\n", round2string((hours_f * rate)), currency_name)
-                        fmt.Printf("Comment           : %s\n", action_comment)
-                        fmt.Println(" === ")
-                }
-                db.Close()
-        }
 }
 
 func get_comment_by_period(project_name string, startDate time.Time, endDate time.Time) {
@@ -259,62 +150,7 @@ func today_func(project_name string, startDate time.Time, endDate time.Time) flo
         return all_time
 }
 
-// get today workday info about project
-func today(project_name string) {
-        db,err := sql.Open("postgres",connection_string())
-        startWorkDay, endWorkDay := get_workday()
-        if err != nil {
-                log.Fatal(err)
-        } else {
-                fmt.Println("")
-                query := "SELECT wl.uid,st.state_name,wl.action_time " +
-                         "FROM worklog wl " +
-                         "INNER JOIN states st on st.uid = wl.state_id " +
-                         "WHERE wl.action_time >= $2 AND wl.action_time <= $3 " +
-                         "AND wl.project_id = (SELECT uid FROM projects WHERE project_name = $1) " +
-                         "ORDER BY wl.action_time ASC;"
-                rows, err := db.Query(query, project_name, startWorkDay, endWorkDay)
-                if err != nil {
-                        log.Fatal(err)
-                }
-                all_data := []TodayStruct{}
-                for rows.Next() {
-                        var uid int
-                        var state_name string
-                        var action_time time.Time
-                        if err := rows.Scan(&uid,&state_name,&action_time); err != nil {
-                                log.Fatal(err)
-                        }
-                        all_data = append(all_data, TodayStruct{action_time:action_time, state_name:state_name})
-                }
-                db.Close()
-                var startDate time.Time
-                var endDate time.Time
-                var nullTime time.Time
-                var all_time float64
-                for _,v := range all_data {
-                        if v.state_name == "start" {
-                                startDate = v.action_time
-                        }
-                        if v.state_name == "stop" {
-                                endDate = v.action_time
-                                if startDate != nullTime {
-                                        delta := endDate.Sub(startDate)
-                                        hours := delta.Hours()
-                                        hours_s := fmt.Sprintf("%.2f", hours)
-                                        hours_f, _ := strconv.ParseFloat(hours_s, 2)
-                                        fmt.Printf("%v - %v = %v (h)\n", startDate, endDate, hours_s)
-                                        all_time += hours_f
-                                }
-                        }
-                }
-                fmt.Println("")
-                fmt.Printf("Summary           : %v (hours)\n", round2string(all_time))
-                rate, currency_name := get_rate(project_name, time.Now())
-                fmt.Printf("Rate              : %s (%s) (per hour) \n",round2string(rate), currency_name)
-                fmt.Printf("Money             : %s (%s)\n", round2string((all_time * rate)), currency_name)
-        }
-}
+
 
 // get today workday info about project
 func by_day(project_name string, startDate time.Time, endDate time.Time) {
@@ -508,31 +344,7 @@ func get_workday() (time.Time, time.Time) {
         return beginDate, endDate
 }
 
-func full_today() {
-        fmt.Println(" === ")
-        startDate, endDate := get_workday()
-        fmt.Printf("Current workday : %v - %v\n", startDate, endDate)
-        projects := project_active_in_time(startDate, endDate)
-        var all_time float64
-        all_time = 0
-        var all_sum float64
-        all_sum = 0
-        // calc time off all selected projects
-        for _, project_name := range projects {
-                project_time := round2float(today_func(project_name, startDate, endDate))
-                project_rate, currency := get_rate(project_name, startDate)
-                project_sum := round2float(project_time * project_rate)
-                all_time += project_time
-                all_sum += project_sum
-                fmt.Println(" --- ")
-                fmt.Printf("Project    : %s\n",project_name)
-                fmt.Printf("Hours      : %v (h)\n",project_time)
-                fmt.Printf("Money      : %v (%s)\n",project_sum, currency)
-                fmt.Println(" --- ")
-        }
-        fmt.Printf("All time  : %v (h)\n", all_time)
-        fmt.Println(" === ")
-}
+
 
 func full_by_date(projectName string, startDate time.Time, endDate time.Time) {
         project_time := round2float(today_func(projectName, startDate, endDate))
