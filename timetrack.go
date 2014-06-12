@@ -137,7 +137,6 @@ func main() {
                                 project_name := os.Args[2]
                                 note_text := os.Args[3]
                                 add_note(project_name, note_text)
-
                         }
                 }
                 if command == "workday" {
