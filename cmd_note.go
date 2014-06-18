@@ -2,17 +2,6 @@ package main
 
 import "log"
 import "fmt"
-import "database/sql"
-
-func get_connection() (*sql.DB) {
-        db,err := sql.Open("postgres",connection_string())
-        if err != nil {
-                log.Fatal(err)
-        } else {
-                return db
-        }
-        return nil
-}
 
 // add note to project
 func add_note(project_name string, note_text string) {
@@ -29,6 +18,21 @@ func add_note(project_name string, note_text string) {
 
 //
 func get_note(project_name string) {
-        //
-
+        db := get_connection()
+        query := "SELECT nt.note_text " +
+                 "FROM notes nt " +
+                 "INNER JOIN projects prj ON prj.uid = nt.project_id " +
+                 "WHERE prj.project_name = $1"
+        rows, err := db.Query(query,project_name)
+        if err != nil {
+                log.Fatal(err)
+        }
+        for rows.Next() {
+                var note string
+                err := rows.Scan(&note)
+                if err != nil {
+                        log.Fatal(err)
+                }
+                fmt.Println(note)
+        }
 }

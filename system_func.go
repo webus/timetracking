@@ -3,8 +3,13 @@ package main
 import "os"
 import "path"
 import "fmt"
+import "log"
 import "strconv"
+import "io/ioutil"
+import "syscall"
+import "os/exec"
 import "encoding/json"
+import "database/sql"
 import "bufio"
 
 func connection_string() string {
@@ -45,4 +50,38 @@ func round2float(num float64) float64 {
         num_s := fmt.Sprintf("%.2f", num)
         num_f, _ := strconv.ParseFloat(num_s, 2)
         return num_f
+}
+
+func get_connection() (*sql.DB) {
+        db,err := sql.Open("postgres",connection_string())
+        if err != nil {
+                log.Fatal(err)
+        } else {
+                return db
+        }
+        return nil
+}
+
+// get text from VI editor
+func get_from_editor() string {
+        f, err := ioutil.TempFile("", "timetrack")
+        if err != nil { panic(err) }
+        defer syscall.Unlink(f.Name())
+        cmd := exec.Command("vi", f.Name())
+        cmd.Stdin = os.Stdin
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+        err_file := cmd.Start()
+        if err_file != nil {
+                log.Fatal(err)
+        }
+        err_file = cmd.Wait()
+        if err_file != nil {
+                log.Fatal(err)
+        }
+        b, err_file2 := ioutil.ReadFile(f.Name())
+        if err_file2 != nil {
+                log.Fatal(err)
+        }
+        return string(b)
 }

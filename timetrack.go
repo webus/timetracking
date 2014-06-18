@@ -9,6 +9,7 @@ import (
         "io/ioutil"
         "syscall"
         "os/exec"
+        "net/http"
 )
 
 /*
@@ -135,8 +136,15 @@ func main() {
                 if command == "note" {
                         if command_len == 4 {
                                 project_name := os.Args[2]
-                                note_text := os.Args[3]
-                                add_note(project_name, note_text)
+                                note_cmd := os.Args[3]
+                                if note_cmd == "new" {
+                                        note_text := get_from_editor()
+                                        add_note(project_name, note_text)
+                                }
+                                if note_cmd == "view" {
+                                        get_note(project_name)
+                                }
+
                         }
                 }
                 if command == "workday" {
@@ -164,6 +172,11 @@ func main() {
                                 fmt.Println("For example: timetrack summary [project_name] [from_date] [to_date]")
                                 fmt.Println("Example: timetrack summary myproject 01.03.2013 05.03.2013")
                         }
+                }
+                if command == "web" {
+                        fmt.Println("http://0.0.0.0:9000")
+                        http.HandleFunc("/", web_hello)
+                        http.ListenAndServe(":9000",nil)
                 }
                 if command == "by-day" {
                         if command_len == 5 {
