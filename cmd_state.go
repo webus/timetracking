@@ -6,7 +6,7 @@ import "time"
 import "strconv"
 import "database/sql"
 
-func get_active_porjects() {
+func get_active_projects() {
         projects_list := available_projects_list()
         for index, element := range projects_list {
                 state_name, _, _, _, _ := get_state_of_project(element)

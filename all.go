@@ -55,8 +55,8 @@ func get_state_of_project(project_name string) (
                 }
                 for rows.Next() {
                         var action_time time.Time
-                        var state_name string
-                        var action_comment string
+                        var state_name sql.NullString
+                        var action_comment sql.NullString
                         if err := rows.Scan(&action_time, &state_name, &action_comment); err != nil {
                                 log.Fatal(err)
                         }
@@ -64,7 +64,19 @@ func get_state_of_project(project_name string) (
                         hours := delta.Hours()
                         hours_s := fmt.Sprintf("%.2f", hours)
                         rate, _ := get_rate(project_name, time.Now())
-                        return state_name, action_time, action_comment, hours_s, round2string(rate)
+                        var state_name_string string
+                        var action_comment_string string
+                        if state_name.Valid {
+                                state_name_string = state_name.String
+                        } else {
+                                state_name_string = ""
+                        }
+                        if action_comment.Valid {
+                                action_comment_string = action_comment.String
+                        } else {
+                                action_comment_string = ""
+                        }
+                        return state_name_string, action_time, action_comment_string, hours_s, round2string(rate)
                 }
                 db.Close()
         }

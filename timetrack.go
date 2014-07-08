@@ -116,7 +116,7 @@ func main() {
                 if command == "state" {
                         if command_len == 2 {
                                 fmt.Printf("get current active projects\n")
-                                get_active_porjects()
+                                get_active_projects()
                         }
                         if command_len == 3 {
                                 project_name := os.Args[2]
