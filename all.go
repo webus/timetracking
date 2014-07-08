@@ -68,13 +68,9 @@ func get_state_of_project(project_name string) (
                         var action_comment_string string
                         if state_name.Valid {
                                 state_name_string = state_name.String
-                        } else {
-                                state_name_string = ""
                         }
                         if action_comment.Valid {
                                 action_comment_string = action_comment.String
-                        } else {
-                                action_comment_string = ""
                         }
                         return state_name_string, action_time, action_comment_string, hours_s, round2string(rate)
                 }
